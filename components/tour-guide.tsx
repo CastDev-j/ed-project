@@ -114,6 +114,9 @@ export function TourGuide() {
         disableActiveInteraction: false,
         animate: true,
         steps: steps as any,
+        doneBtnText: "Finalizar",
+        nextBtnText: "Siguiente",
+        prevBtnText: "Anterior",
         onDestroyed: () => {
           driverRef.current = null;
           isTourActiveGlobal = false;
