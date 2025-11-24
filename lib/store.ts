@@ -40,6 +40,9 @@ interface SimulationStore {
   parameters: SystemParams;
   force: ForceConfig;
 
+  activePreset: null | "underdamped" | "critical" | "overdamped" | "resonance";
+  aiAnalysisToken: number; // incremented on input changes to clear AI analysis
+
   isRunning: boolean;
   currentTime: number;
   timeStep: number;
@@ -81,6 +84,8 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
     frequency: 1.0,
     offset: 0,
   },
+  activePreset: null,
+  aiAnalysisToken: 0,
   isRunning: false,
   currentTime: 0,
   timeStep: 0.01,
@@ -100,15 +105,82 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   setParameters: (params) =>
     set((state) => ({
       parameters: { ...state.parameters, ...params },
+      // User manually changed parameters, disable preset highlight
+      activePreset: null,
+      // Clear simulation data so charts regenerate only after stop
+      simulationData: {
+        time: [],
+        positions: { x1: [], x2: [], x3: [] },
+        velocities: { v1: [], v2: [], v3: [] },
+        energies: { kinetic: [], potential: [], total: [] },
+      },
+      currentTime: 0,
+      currentState: { x1: 0, v1: 0, x2: 0, v2: 0, x3: 0, v3: 0 },
+      aiAnalysisToken: state.aiAnalysisToken + 1,
     })),
 
   setForce: (force) =>
     set((state) => ({
       force: { ...state.force, ...force },
+      // Change in force invalidates previous results & AI analysis
+      simulationData: {
+        time: [],
+        positions: { x1: [], x2: [], x3: [] },
+        velocities: { v1: [], v2: [], v3: [] },
+        energies: { kinetic: [], potential: [], total: [] },
+      },
+      currentTime: 0,
+      currentState: { x1: 0, v1: 0, x2: 0, v2: 0, x3: 0, v3: 0 },
+      aiAnalysisToken: state.aiAnalysisToken + 1,
     })),
 
   startSimulation: () => set({ isRunning: true }),
-  stopSimulation: () => set({ isRunning: false }),
+  stopSimulation: () =>
+    set((state) => {
+      // Asegurar que el último estado se almacene en simulationData si no coincide el tiempo.
+      const lastStoredTime =
+        state.simulationData.time[state.simulationData.time.length - 1];
+      const needStoreFinal = lastStoredTime !== state.currentTime;
+
+      if (!needStoreFinal) {
+        return { isRunning: false };
+      }
+
+      const { parameters } = state;
+      const { masses, springs } = parameters;
+      const { x1, x2, x3, v1, v2, v3 } = state.currentState;
+
+      const kinetic =
+        0.5 * (masses[0] * v1 * v1 + masses[1] * v2 * v2 + masses[2] * v3 * v3);
+      const potential =
+        0.5 *
+        (springs[0] * x1 * x1 +
+          springs[1] * (x2 - x1) * (x2 - x1) +
+          springs[2] * (x3 - x2) * (x3 - x2));
+      const total = kinetic + potential;
+
+      return {
+        isRunning: false,
+        simulationData: {
+          time: [...state.simulationData.time, state.currentTime],
+          positions: {
+            x1: [...state.simulationData.positions.x1, x1],
+            x2: [...state.simulationData.positions.x2, x2],
+            x3: [...state.simulationData.positions.x3, x3],
+          },
+          velocities: {
+            v1: [...state.simulationData.velocities.v1, v1],
+            v2: [...state.simulationData.velocities.v2, v2],
+            v3: [...state.simulationData.velocities.v3, v3],
+          },
+          energies: {
+            kinetic: [...state.simulationData.energies.kinetic, kinetic],
+            potential: [...state.simulationData.energies.potential, potential],
+            total: [...state.simulationData.energies.total, total],
+          },
+        },
+      };
+    }),
 
   resetSimulation: () =>
     set({
@@ -121,6 +193,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
         velocities: { v1: [], v2: [], v3: [] },
         energies: { kinetic: [], potential: [], total: [] },
       },
+      aiAnalysisToken: get().aiAnalysisToken + 1,
     }),
 
   setSpeedMultiplier: (speed) => set({ speedMultiplier: speed }),
@@ -226,7 +299,20 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
         dampers: [0.2, 0.2, 0.2] as [number, number, number],
       },
     };
-    set({ parameters: presets[preset] });
-    get().resetSimulation();
+    set((state) => ({
+      parameters: presets[preset],
+      activePreset: preset,
+      // Reset simulation & analysis
+      isRunning: false,
+      currentTime: 0,
+      currentState: { x1: 0, v1: 0, x2: 0, v2: 0, x3: 0, v3: 0 },
+      simulationData: {
+        time: [],
+        positions: { x1: [], x2: [], x3: [] },
+        velocities: { v1: [], v2: [], v3: [] },
+        energies: { kinetic: [], potential: [], total: [] },
+      },
+      aiAnalysisToken: state.aiAnalysisToken + 1,
+    }));
   },
 }));

@@ -101,8 +101,8 @@ export function ResultsSection() {
             Resultados de la Simulación
           </h2>
           <p className="text-base text-muted-foreground">
-            Desplazamientos, velocidades, energías y espacio fase actualizados
-            en tiempo real
+            Desplazamientos, velocidades, energías y espacio fase generados al
+            detener la simulación
           </p>
           {isRunning && (
             <p className="text-xs text-primary mt-1">
@@ -115,7 +115,16 @@ export function ResultsSection() {
           <Card>
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground text-sm">
-                Inicia la simulación para ver las gráficas de resultados
+                Inicia y luego detén la simulación para ver las gráficas.
+              </p>
+            </CardContent>
+          </Card>
+        ) : isRunning ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground text-sm">
+                La simulación está en curso. Las gráficas se mostrarán al
+                detenerla.
               </p>
             </CardContent>
           </Card>

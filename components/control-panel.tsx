@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useSimulationStore } from "@/lib/store";
 import { RotateCcw, Download } from "lucide-react";
+import { AIAnalysisButton } from "@/components/ai-analysis-button";
 
 export function ControlPanel() {
   const {
@@ -29,6 +30,15 @@ export function ControlPanel() {
     resetSimulation,
     loadPreset,
   } = useSimulationStore();
+  const activePreset = useSimulationStore((s) => s.activePreset);
+
+  const forceDescriptions: Record<string, string> = {
+    sine: "Onda continua y suave, ideal para análisis de frecuencia y resonancia",
+    step: "Cambio brusco de amplitud, útil para respuesta transitoria",
+    sawtooth: "Incremento lineal con caída súbita, simula cargas crecientes",
+    square: "Alterna entre dos valores, genera armónicos impares",
+    triangle: "Variación lineal simétrica, contenido armónico reducido",
+  };
 
   return (
     <>
@@ -159,6 +169,9 @@ export function ControlPanel() {
                       <SelectItem value="triangle">Triangular</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground leading-relaxed mt-2">
+                    {forceDescriptions[force.type]}
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -196,7 +209,9 @@ export function ControlPanel() {
                 <h4 className="text-sm font-semibold">Presets</h4>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
-                    variant="outline"
+                    variant={
+                      activePreset === "underdamped" ? "default" : "outline"
+                    }
                     size="sm"
                     className="h-9 text-xs"
                     onClick={() => loadPreset("underdamped")}
@@ -204,7 +219,9 @@ export function ControlPanel() {
                     Subamort.
                   </Button>
                   <Button
-                    variant="outline"
+                    variant={
+                      activePreset === "critical" ? "default" : "outline"
+                    }
                     size="sm"
                     className="h-9 text-xs"
                     onClick={() => loadPreset("critical")}
@@ -212,7 +229,9 @@ export function ControlPanel() {
                     Crítico
                   </Button>
                   <Button
-                    variant="outline"
+                    variant={
+                      activePreset === "overdamped" ? "default" : "outline"
+                    }
                     size="sm"
                     className="h-9 text-xs"
                     onClick={() => loadPreset("overdamped")}
@@ -220,7 +239,9 @@ export function ControlPanel() {
                     Sobream.
                   </Button>
                   <Button
-                    variant="outline"
+                    variant={
+                      activePreset === "resonance" ? "default" : "outline"
+                    }
                     size="sm"
                     className="h-9 text-xs"
                     onClick={() => loadPreset("resonance")}
@@ -235,16 +256,10 @@ export function ControlPanel() {
                     className="flex-1 h-9"
                     onClick={resetSimulation}
                   >
-                    <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reset
+                    <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reiniciar
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 h-9"
-                    disabled
-                  >
-                    <Download className="h-3.5 w-3.5 mr-1.5" /> Exportar
-                  </Button>
+
+                  <AIAnalysisButton />
                 </div>
               </div>
             </div>

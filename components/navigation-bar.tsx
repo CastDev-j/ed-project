@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { TourGuide } from "@/components/tour-guide";
+import { TourGuide, getIsTourActive } from "@/components/tour-guide";
 import { Play, Pause, RotateCcw } from "lucide-react";
 import { useSimulationStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -10,15 +10,16 @@ import { cn } from "@/lib/utils";
 const sections = [
   { id: "model", label: "Modelo" },
   { id: "visualization", label: "Simulación" },
+  { id: "results", label: "Resultados" },
   { id: "laplace", label: "Laplace" },
   { id: "fourier", label: "Fourier" },
-  { id: "results", label: "Resultados" },
   { id: "analysis", label: "Análisis" },
 ];
 
 export function NavigationBar() {
   const [activeSection, setActiveSection] = useState("hero");
   const [scrolled, setScrolled] = useState(false);
+  const [isTourActive, setIsTourActive] = useState(false);
   const { isRunning, startSimulation, stopSimulation, resetSimulation } =
     useSimulationStore();
 
@@ -44,6 +45,13 @@ export function NavigationBar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsTourActive(getIsTourActive());
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
+
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -55,7 +63,8 @@ export function NavigationBar() {
     <nav
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        scrolled ? "bg-card/95 border-b" : "bg-transparent"
+        scrolled ? "bg-card/95 border-b" : "bg-transparent",
+        isTourActive ? "pointer-events-none opacity-0" : "opacity-100"
       )}
     >
       <div className="container mx-auto px-4">

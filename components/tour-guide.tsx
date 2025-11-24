@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { driver, Driver } from "driver.js";
 import "driver.js/dist/driver.css";
 import { Button } from "@/components/ui/button";
 import { HelpCircle, X } from "lucide-react";
 
+let isTourActiveGlobal = false;
+export const getIsTourActive = () => isTourActiveGlobal;
+
 export function TourGuide() {
   const driverRef = useRef<Driver | null>(null);
+  const [, forceUpdate] = useState({});
 
   useEffect(() => {
     return () => {
@@ -102,6 +106,8 @@ export function TourGuide() {
     try {
       driverRef.current?.destroy();
       const steps = baseSteps.filter((s) => document.querySelector(s.element));
+      isTourActiveGlobal = true;
+      forceUpdate({});
       driverRef.current = driver({
         showProgress: true,
         allowClose: true,
@@ -110,6 +116,8 @@ export function TourGuide() {
         steps: steps as any,
         onDestroyed: () => {
           driverRef.current = null;
+          isTourActiveGlobal = false;
+          forceUpdate({});
         },
       });
       driverRef.current.drive();

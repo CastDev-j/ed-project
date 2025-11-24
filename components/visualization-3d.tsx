@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid, PerspectiveCamera } from "@react-three/drei";
+import * as THREE from "three";
 import {
   Card,
   CardContent,
@@ -97,10 +98,24 @@ export function Visualization3D() {
         </div>
       </CardHeader>
       <CardContent className="h-[calc(100%-5rem)]">
-        <div className="w-full h-full bg-background border border-border rounded relative overflow-hidden">
+        <div className="w-full h-full bg-white border border-border rounded relative overflow-hidden">
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
-              <Canvas dpr={[1, 2]} className="w-full h-full">
+              <Canvas
+                dpr={[1, 1.5]}
+                className="w-full h-full"
+                performance={{ min: 0.5 }}
+                gl={{
+                  antialias: true,
+                  powerPreference: "high-performance",
+                  alpha: false,
+                  stencil: false,
+                  depth: true,
+                }}
+                onCreated={({ scene }) => {
+                  scene.background = new THREE.Color("#ffffff");
+                }}
+              >
                 <PerspectiveCamera makeDefault position={[8, 6, 8]} fov={50} />
                 <OrbitControls
                   enablePan
@@ -108,8 +123,8 @@ export function Visualization3D() {
                   enableRotate
                   minDistance={5}
                   maxDistance={18}
-                  maxPolarAngle={Math.PI / 2.3}
                   target={[0, 0.2, 0]}
+                  makeDefault
                 />
 
                 <Grid

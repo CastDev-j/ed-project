@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import { useSimulationStore } from "@/lib/store";
@@ -19,30 +19,43 @@ export function MechanicalSystem3D() {
   } = useSimulationStore();
 
   const frameCountRef = useRef(0);
-  const storeEveryNFrames = 5;
+  const storeEveryNFrames = 3;
+  const forceFunctionRef = useRef(getForceFunction(force));
+
+  useMemo(() => {
+    forceFunctionRef.current = getForceFunction(force);
+  }, [force.type, force.amplitude, force.frequency, force.offset]);
+
+  const MAX_SIMULATION_TIME = 3; // segundos de tiempo simulado máximo
 
   useFrame(() => {
-    if (isRunning) {
-      const forceFunction = getForceFunction(force);
-      const newState = rk4Step(
-        currentState,
-        parameters,
-        forceFunction,
-        timeStep,
-        currentTime
-      );
-      const newTime = currentTime + timeStep;
+    if (!isRunning) return;
 
-      frameCountRef.current++;
-      if (frameCountRef.current >= storeEveryNFrames) {
-        updateSimulation(newState, newTime);
-        frameCountRef.current = 0;
-      } else {
-        useSimulationStore.setState({
-          currentState: newState,
-          currentTime: newTime,
-        });
-      }
+    const newState = rk4Step(
+      currentState,
+      parameters,
+      forceFunctionRef.current,
+      timeStep,
+      currentTime
+    );
+    const newTime = currentTime + timeStep;
+
+    // Si alcanzamos el tiempo máximo, almacenamos el último punto y detenemos.
+    if (newTime >= MAX_SIMULATION_TIME) {
+      updateSimulation(newState, newTime);
+      useSimulationStore.getState().stopSimulation();
+      return;
+    }
+
+    frameCountRef.current++;
+    if (frameCountRef.current >= storeEveryNFrames) {
+      updateSimulation(newState, newTime);
+      frameCountRef.current = 0;
+    } else {
+      useSimulationStore.setState({
+        currentState: newState,
+        currentTime: newTime,
+      });
     }
   });
 
@@ -56,6 +69,8 @@ export function MechanicalSystem3D() {
   const p1: [number, number, number] = [basePositions[0] + x1 * scale, 0, 0];
   const p2: [number, number, number] = [basePositions[1] + x2 * scale, 0, 0];
   const p3: [number, number, number] = [basePositions[2] + x3 * scale, 0, 0];
+  const halfMass = 0.6; // la mitad del tamaño de la caja (1.2)
+  const wallHalfThickness = 0.25; // la mitad del espesor de la pared (0.5)
 
   return (
     <group position={[0, 0, 0]}>
@@ -64,6 +79,14 @@ export function MechanicalSystem3D() {
         <boxGeometry args={[0.5, 4, 2]} />
         <meshBasicMaterial color="#6d28d9" />
       </mesh>
+
+      {/* Iluminación optimizada */}
+      <ambientLight intensity={0.6} />
+      <directionalLight
+        position={[5, 5, 5]}
+        intensity={0.8}
+        castShadow={false}
+      />
 
       {/* Masa 1 */}
       <Mass
@@ -74,8 +97,8 @@ export function MechanicalSystem3D() {
       />
       {/* Módulo conexión pared - masa1 */}
       <ConnectionModule
-        start={[wallX + 0.55, 0, 0]}
-        end={[p1[0] - 0.7, 0, 0]}
+        start={[wallX + wallHalfThickness + 0.01, 0, 0]} // ligeramente dentro de la pared
+        end={[p1[0] - halfMass, 0, 0]}
         colorSpring="#a78bfa"
         colorPiston="#64748b"
       />
@@ -89,8 +112,8 @@ export function MechanicalSystem3D() {
       />
       {/* Módulo conexión masa1 - masa2 */}
       <ConnectionModule
-        start={[p1[0] + 0.7, 0, 0]}
-        end={[p2[0] - 0.7, 0, 0]}
+        start={[p1[0] + halfMass, 0, 0]}
+        end={[p2[0] - halfMass, 0, 0]}
         colorSpring="#c084fc"
         colorPiston="#64748b"
       />
@@ -104,8 +127,8 @@ export function MechanicalSystem3D() {
       />
       {/* Módulo conexión masa2 - masa3 */}
       <ConnectionModule
-        start={[p2[0] + 0.7, 0, 0]}
-        end={[p3[0] - 0.7, 0, 0]}
+        start={[p2[0] + halfMass, 0, 0]}
+        end={[p3[0] - halfMass, 0, 0]}
         colorSpring="#d8b4fe"
         colorPiston="#64748b"
       />
@@ -124,20 +147,21 @@ function Mass({
   value: number;
   color: string;
 }) {
+  const geometry = useMemo(() => new THREE.BoxGeometry(1.2, 1.2, 1.2), []);
+
   return (
     <group position={position}>
-      <mesh>
-        <boxGeometry args={[1.2, 1.2, 1.2]} />
+      <mesh geometry={geometry}>
         <meshBasicMaterial color={color} />
       </mesh>
-      <Html position={[0, 0, 0.65]} center>
-        <div className="text-white font-bold text-2xl pointer-events-none">
+      <Html position={[0, 0, 0.65]} center distanceFactor={8} occlude={false}>
+        <div className="text-white font-bold text-2xl pointer-events-none select-none">
           {label}
         </div>
       </Html>
-      <Html position={[0, -0.9, 0]} center>
+      <Html position={[0, -0.9, 0]} center distanceFactor={8} occlude={false}>
         <div
-          className="font-mono text-sm pointer-events-none"
+          className="font-mono text-sm pointer-events-none select-none"
           style={{ color }}
         >
           {value.toFixed(1)} kg
@@ -164,11 +188,11 @@ function ConnectionModule({
   const length = dir.length();
   if (length < 0.001) return null;
 
-  // Spring simplified geometry (fewer points)
-  const coils = 6;
+  // Spring optimized geometry
+  const coils = 5;
   const radius = 0.18;
   const points: THREE.Vector3[] = [];
-  const samples = coils * 16;
+  const samples = coils * 8; // Reducido de 16 a 8 para mejor performance
   for (let i = 0; i <= samples; i++) {
     const t = i / samples;
     const angle = t * coils * Math.PI * 2;
@@ -196,20 +220,20 @@ function ConnectionModule({
     <group position={start} rotation={[0, rotY, rotZ]}>
       {/* Spring */}
       <mesh position={[0, 0, 0]}>
-        <tubeGeometry args={[curve, samples, 0.035, 6, false]} />
+        <tubeGeometry args={[curve, samples, 0.035, 5, false]} />
         <meshBasicMaterial color={colorSpring} />
       </mesh>
       {/* Housing (left) */}
       <mesh position={[length * 0.25, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry
-          args={[pistonOuterRadius, pistonOuterRadius, housingLength, 12]}
+          args={[pistonOuterRadius, pistonOuterRadius, housingLength, 8]}
         />
         <meshBasicMaterial color={colorPiston} />
       </mesh>
       {/* Rod (right) */}
       <mesh position={[length * 0.75, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry
-          args={[pistonInnerRadius, pistonInnerRadius, rodLength, 10]}
+          args={[pistonInnerRadius, pistonInnerRadius, rodLength, 8]}
         />
         <meshBasicMaterial color={colorPiston} />
       </mesh>

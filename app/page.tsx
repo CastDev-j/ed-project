@@ -43,6 +43,12 @@ export default function Home() {
           </div>
         </section>
 
+        <section id="results" className="py-16">
+          <div className="container mx-auto px-4 max-w-7xl">
+            <ResultsSection />
+          </div>
+        </section>
+
         <section id="laplace" className="py-16">
           <div className="container mx-auto px-4 max-w-7xl">
             <LaplaceSection />
@@ -52,12 +58,6 @@ export default function Home() {
         <section id="fourier" className="py-16 bg-muted/30">
           <div className="container mx-auto px-4 max-w-7xl">
             <FourierSection />
-          </div>
-        </section>
-
-        <section id="results" className="py-16">
-          <div className="container mx-auto px-4 max-w-7xl">
-            <ResultsSection />
           </div>
         </section>
 
