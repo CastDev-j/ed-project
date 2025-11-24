@@ -80,7 +80,7 @@ export function ControlPanel() {
             </div>
 
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-secondary">
+              <h4 className="text-sm font-semibold text-primary">
                 Resortes (N/m)
               </h4>
               {[0, 1, 2].map((i) => (
@@ -110,7 +110,7 @@ export function ControlPanel() {
             </div>
 
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-accent">
+              <h4 className="text-sm font-semibold text-primary">
                 Amortiguadores (Ns/m)
               </h4>
               {[0, 1, 2].map((i) => (

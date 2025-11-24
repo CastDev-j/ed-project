@@ -63,15 +63,15 @@ export function MathematicalModel() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
-                <div className="p-4 bg-primary/5 border border-primary/20 rounded">
+                <div className="p-4 border border-primary/20 rounded">
                   <h4 className="font-semibold text-primary mb-2">Masas (m)</h4>
                   <p className="text-sm text-muted-foreground">
                     Inercia del sistema. Mayor masa = mayor resistencia al
                     cambio de movimiento.
                   </p>
                 </div>
-                <div className="p-4 bg-secondary/5 border border-secondary/20 rounded">
-                  <h4 className="font-semibold text-secondary mb-2">
+                <div className="p-4 border border-primary/20 rounded">
+                  <h4 className="font-semibold text-primary mb-2">
                     Resortes (k)
                   </h4>
                   <p className="text-sm text-muted-foreground">
@@ -79,8 +79,8 @@ export function MathematicalModel() {
                     frecuencia natural.
                   </p>
                 </div>
-                <div className="p-4 bg-accent/5 border border-accent/20 rounded">
-                  <h4 className="font-semibold text-accent mb-2">
+                <div className="p-4 border border-primary/20 rounded">
+                  <h4 className="font-semibold text-primary mb-2">
                     Amortiguadores (c)
                   </h4>
                   <p className="text-sm text-muted-foreground">
