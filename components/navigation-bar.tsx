@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { TourGuide, getIsTourActive } from "@/components/tour-guide";
-import { Play, Pause, RotateCcw } from "lucide-react";
+import { Play, Pause, RotateCcw, CuboidIcon } from "lucide-react";
 import { useSimulationStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -72,10 +72,10 @@ export function NavigationBar() {
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-lg">
-                M
+                <CuboidIcon />
               </span>
             </div>
-            <span className="font-semibold text-lg">Simulador 3×3</span>
+            <span className="font-semibold text-lg">Simulador Mecánico</span>
           </div>
 
           <div className="hidden md:flex items-center gap-1">
