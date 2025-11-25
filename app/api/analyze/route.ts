@@ -13,70 +13,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Construir el prompt con todos los datos
-    const prompt = `Analiza los siguientes resultados de una simulación de un sistema mecánico de 3 grados de libertad (masa-resorte-amortiguador):
+    const prompt = `Interpreta técnicamente los siguientes RESULTADOS de una simulación masa-resorte-amortiguador de 3 grados de libertad. Limítate a analizar coherencia física, patrones dinámicos (transitorio / estacionario / posible resonancia), disipación de energía y recomendaciones breves. NO describas el modelo ni repitas instrucciones. NO incluyas saludos ni despedidas.
 
-PARÁMETROS DEL SISTEMA:
-- Masas: m₁=${parameters.masses[0]} kg, m₂=${parameters.masses[1]} kg, m₃=${
+PARÁMETROS:
+m = [${parameters.masses[0]}, ${parameters.masses[1]}, ${
       parameters.masses[2]
-    } kg
-- Constantes de resorte: k₁=${parameters.springs[0]} N/m, k₂=${
-      parameters.springs[1]
-    } N/m, k₃=${parameters.springs[2]} N/m
-- Coeficientes de amortiguamiento: c₁=${parameters.dampers[0]} Ns/m, c₂=${
-      parameters.dampers[1]
-    } Ns/m, c₃=${parameters.dampers[2]} Ns/m
+    }] kg
+k = [${parameters.springs[0]}, ${parameters.springs[1]}, ${
+      parameters.springs[2]
+    }] N/m
+c = [${parameters.dampers[0]}, ${parameters.dampers[1]}, ${
+      parameters.dampers[2]
+    }] Ns/m
+fuerza: tipo=${force.type}, amplitud=${force.amplitude} N, frecuencia=${
+      force.frequency
+    } Hz
+tiempo_simulado=${currentTime.toFixed(2)} s
 
-FUERZA EXTERNA APLICADA:
-- Tipo: ${force.type}
-- Amplitud: ${force.amplitude} N
-- Frecuencia: ${force.frequency} Hz
+EXTREMOS:
+max|x1|=${Math.max(...simulationData.positions.x1.map(Math.abs)).toFixed(4)} m
+max|x2|=${Math.max(...simulationData.positions.x2.map(Math.abs)).toFixed(4)} m
+max|x3|=${Math.max(...simulationData.positions.x3.map(Math.abs)).toFixed(4)} m
+max|v1|=${Math.max(...simulationData.velocities.v1.map(Math.abs)).toFixed(
+      4
+    )} m/s
+max|v2|=${Math.max(...simulationData.velocities.v2.map(Math.abs)).toFixed(
+      4
+    )} m/s
+max|v3|=${Math.max(...simulationData.velocities.v3.map(Math.abs)).toFixed(
+      4
+    )} m/s
+E_final_cin=${(simulationData.energies.kinetic.at(-1) ?? 0).toFixed(4)} J
+E_final_pot=${(simulationData.energies.potential.at(-1) ?? 0).toFixed(4)} J
+E_final_tot=${(simulationData.energies.total.at(-1) ?? 0).toFixed(4)} J
 
-TIEMPO DE SIMULACIÓN: ${currentTime.toFixed(2)} segundos
-
-RESULTADOS OBTENIDOS:
-- Desplazamiento máximo m₁: ${Math.max(
-      ...simulationData.positions.x1.map(Math.abs)
-    ).toFixed(4)} m
-- Desplazamiento máximo m₂: ${Math.max(
-      ...simulationData.positions.x2.map(Math.abs)
-    ).toFixed(4)} m
-- Desplazamiento máximo m₃: ${Math.max(
-      ...simulationData.positions.x3.map(Math.abs)
-    ).toFixed(4)} m
-- Velocidad máxima m₁: ${Math.max(
-      ...simulationData.velocities.v1.map(Math.abs)
-    ).toFixed(4)} m/s
-- Velocidad máxima m₂: ${Math.max(
-      ...simulationData.velocities.v2.map(Math.abs)
-    ).toFixed(4)} m/s
-- Velocidad máxima m₃: ${Math.max(
-      ...simulationData.velocities.v3.map(Math.abs)
-    ).toFixed(4)} m/s
-- Energía cinética final: ${
-      simulationData.energies.kinetic[
-        simulationData.energies.kinetic.length - 1
-      ]?.toFixed(4) || 0
-    } J
-- Energía potencial final: ${
-      simulationData.energies.potential[
-        simulationData.energies.potential.length - 1
-      ]?.toFixed(4) || 0
-    } J
-- Energía total final: ${
-      simulationData.energies.total[
-        simulationData.energies.total.length - 1
-      ]?.toFixed(4) || 0
-    } J
-
-Proporciona un análisis técnico que incluya:
-1. Evaluación de la coherencia física de los resultados
-2. Análisis del comportamiento dinámico observado
-3. Efecto de los parámetros en la respuesta del sistema
-4. Observaciones sobre la disipación de energía
-5. Recomendaciones técnicas si aplican
-
-Usa formato markdown con ecuaciones LaTeX cuando sea necesario (usando $ para inline y $$ para bloques). No incluyas saludos, despedidas ni texto introductorio.`;
+Devuelve sólo un bloque markdown estructurado con secciones: Coherencia, Dinámica, Energía, Recomendaciones. Usa LaTeX solo si aporta claridad (p.ej. $E=K+U$). No agregues título general.`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
@@ -115,9 +86,15 @@ Usa formato markdown con ecuaciones LaTeX cuando sea necesario (usando $ para in
     }
 
     const data = await response.json();
-    const analysis =
+    let analysis =
       data.candidates?.[0]?.content?.parts?.[0]?.text ||
       "No se pudo generar el análisis";
+
+    // Limpiar marcadores de bloque de código si existen
+    analysis = analysis
+      .replace(/^```markdown\s*/, "")
+      .replace(/^```\s*/, "")
+      .replace(/\s*```$/, "");
 
     return NextResponse.json({ analysis });
   } catch (error) {
