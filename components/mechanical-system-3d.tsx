@@ -26,7 +26,7 @@ export function MechanicalSystem3D() {
     forceFunctionRef.current = getForceFunction(force);
   }, [force.type, force.amplitude, force.frequency, force.offset]);
 
-  const MAX_SIMULATION_TIME = 3; // segundos de tiempo simulado máximo
+  const MAX_SIMULATION_TIME = 10;
 
   useFrame(() => {
     if (!isRunning) return;
@@ -40,7 +40,6 @@ export function MechanicalSystem3D() {
     );
     const newTime = currentTime + timeStep;
 
-    // Si alcanzamos el tiempo máximo, almacenamos el último punto y detenemos.
     if (newTime >= MAX_SIMULATION_TIME) {
       updateSimulation(newState, newTime);
       useSimulationStore.getState().stopSimulation();
@@ -61,26 +60,23 @@ export function MechanicalSystem3D() {
 
   const { x1, x2, x3 } = currentState;
 
-  // Base positions centrados alrededor del origen
   const basePositions = [-2.5, 0, 2.5] as const;
   const wallX = -4.2;
-  const scale = 0.9; // factor para desplazamientos
+  const scale = 0.9;
 
   const p1: [number, number, number] = [basePositions[0] + x1 * scale, 0, 0];
   const p2: [number, number, number] = [basePositions[1] + x2 * scale, 0, 0];
   const p3: [number, number, number] = [basePositions[2] + x3 * scale, 0, 0];
-  const halfMass = 0.6; // la mitad del tamaño de la caja (1.2)
-  const wallHalfThickness = 0.25; // la mitad del espesor de la pared (0.5)
+  const halfMass = 0.6;
+  const wallHalfThickness = 0.25;
 
   return (
     <group position={[0, 0, 0]}>
-      {/* Pared / Soporte fijo */}
       <mesh position={[wallX, 0, 0]}>
         <boxGeometry args={[0.5, 4, 2]} />
         <meshBasicMaterial color="#6d28d9" />
       </mesh>
 
-      {/* Iluminación optimizada */}
       <ambientLight intensity={0.6} />
       <directionalLight
         position={[5, 5, 5]}
@@ -88,29 +84,25 @@ export function MechanicalSystem3D() {
         castShadow={false}
       />
 
-      {/* Masa 1 */}
       <Mass
         position={p1}
         label="m₁"
         value={parameters.masses[0]}
         color="#8b5cf6"
       />
-      {/* Módulo conexión pared - masa1 */}
       <ConnectionModule
-        start={[wallX + wallHalfThickness + 0.01, 0, 0]} // ligeramente dentro de la pared
+        start={[wallX + wallHalfThickness + 0.01, 0, 0]}
         end={[p1[0] - halfMass, 0, 0]}
         colorSpring="#a78bfa"
         colorPiston="#64748b"
       />
 
-      {/* Masa 2 */}
       <Mass
         position={p2}
         label="m₂"
         value={parameters.masses[1]}
         color="#a855f7"
       />
-      {/* Módulo conexión masa1 - masa2 */}
       <ConnectionModule
         start={[p1[0] + halfMass, 0, 0]}
         end={[p2[0] - halfMass, 0, 0]}
@@ -118,14 +110,12 @@ export function MechanicalSystem3D() {
         colorPiston="#64748b"
       />
 
-      {/* Masa 3 */}
       <Mass
         position={p3}
         label="m₃"
         value={parameters.masses[2]}
         color="#c026d3"
       />
-      {/* Módulo conexión masa2 - masa3 */}
       <ConnectionModule
         start={[p2[0] + halfMass, 0, 0]}
         end={[p3[0] - halfMass, 0, 0]}

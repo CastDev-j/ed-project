@@ -105,9 +105,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   setParameters: (params) =>
     set((state) => ({
       parameters: { ...state.parameters, ...params },
-      // User manually changed parameters, disable preset highlight
       activePreset: null,
-      // Clear simulation data so charts regenerate only after stop
       simulationData: {
         time: [],
         positions: { x1: [], x2: [], x3: [] },
@@ -122,7 +120,6 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   setForce: (force) =>
     set((state) => ({
       force: { ...state.force, ...force },
-      // Change in force invalidates previous results & AI analysis
       simulationData: {
         time: [],
         positions: { x1: [], x2: [], x3: [] },
@@ -137,7 +134,6 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   startSimulation: () => set({ isRunning: true }),
   stopSimulation: () =>
     set((state) => {
-      // Asegurar que el último estado se almacene en simulationData si no coincide el tiempo.
       const lastStoredTime =
         state.simulationData.time[state.simulationData.time.length - 1];
       const needStoreFinal = lastStoredTime !== state.currentTime;
@@ -302,7 +298,6 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
     set((state) => ({
       parameters: presets[preset],
       activePreset: preset,
-      // Reset simulation & analysis
       isRunning: false,
       currentTime: 0,
       currentState: { x1: 0, v1: 0, x2: 0, v2: 0, x3: 0, v3: 0 },

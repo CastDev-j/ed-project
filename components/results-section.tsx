@@ -325,7 +325,6 @@ export function ResultsSection() {
               </CardContent>
             </Card>
 
-            {/* Espacio Fase */}
             <Card className="overflow-hidden">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg">Espacio Fase</CardTitle>
