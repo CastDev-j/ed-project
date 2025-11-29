@@ -165,7 +165,7 @@ export function computeNaturalFrequencies(params: SystemParams): number[] {
   return [omega1, omega2, omega3].sort((a, b) => a - b);
 }
 
-// Analítica por Transformada de Laplace para fuerza escalón (solo type="step")
+// Analítica por Transformada de Laplace para fuerza escalón
 // Resuelve el sistema lineal M x'' + C x' + K x = F aplicando fuerza al primer nodo.
 export function laplaceStep(
   params: SystemParams,
@@ -218,7 +218,7 @@ export function laplaceStep(
   try {
     E = expm(multiply(A_mat, tau));
   } catch {
-    // Fallback simple serie (pocas iteraciones) si expm no disponible
+    // Fallback simple serie si expm no disponible
     const I = identity(6);
     let term = I;
     let result = I;

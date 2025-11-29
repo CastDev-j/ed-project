@@ -34,11 +34,9 @@ export function MechanicalSystem3D() {
     const newTime = currentTime + timeStep;
 
     let newState: typeof currentState;
-    // Solo usar Laplace si el método es laplace Y la fuerza es escalón
     if (method === "laplace" && force.type === "step") {
       newState = laplaceStep(parameters, force, newTime);
     } else {
-      // Usar RK4 para todo lo demás
       newState = rk4Step(
         currentState,
         parameters,
