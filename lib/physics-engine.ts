@@ -1,4 +1,6 @@
 import type { SystemParams, StateVector, ForceConfig } from "./store";
+import { expm, multiply, subtract, inv, matrix, add, identity } from "mathjs";
+
 export function rk4Step(
   state: StateVector,
   params: SystemParams,
@@ -161,4 +163,88 @@ export function computeNaturalFrequencies(params: SystemParams): number[] {
   const omega3 = Math.sqrt((k2 + k3) / m3);
 
   return [omega1, omega2, omega3].sort((a, b) => a - b);
+}
+
+// Analítica por Transformada de Laplace para fuerza escalón (solo type="step")
+// Resuelve el sistema lineal M x'' + C x' + K x = F aplicando fuerza al primer nodo.
+export function laplaceStep(
+  params: SystemParams,
+  force: ForceConfig,
+  t: number
+): StateVector {
+  if (force.type !== "step") {
+    return { x1: 0, v1: 0, x2: 0, v2: 0, x3: 0, v3: 0 };
+  }
+  const { amplitude, offset } = force;
+  if (t < offset) {
+    return { x1: 0, v1: 0, x2: 0, v2: 0, x3: 0, v3: 0 };
+  }
+  const tau = t - offset;
+
+  const [m1, m2, m3] = params.masses;
+  const [k1, k2, k3] = params.springs;
+  const [c1, c2, c3] = params.dampers;
+
+  // Matriz dinámica del sistema en forma de primer orden: s' = A s + B F
+  // s = [x1,x2,x3,v1,v2,v3]^T
+  const A: number[][] = [
+    [0, 0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 0, 1],
+    [(-k1 - k2) / m1, k2 / m1, 0, (-c1 - c2) / m1, c2 / m1, 0],
+    [k2 / m2, -(k2 + k3) / m2, k3 / m2, c2 / m2, -(c2 + c3) / m2, c3 / m2],
+    [0, k3 / m3, -k3 / m3, 0, c3 / m3, -c3 / m3],
+  ];
+
+  // B mapea fuerzas sobre masas a aceleraciones (solo usamos primera masa)
+  const B: number[][] = [
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0],
+    [1 / m1, 0, 0],
+    [0, 1 / m2, 0],
+    [0, 0, 1 / m3],
+  ];
+
+  // Vector de fuerza (solo componente en masa 1)
+  const Fvec = [amplitude, 0, 0];
+
+  const A_mat = matrix(A);
+  const B_mat = matrix(B);
+  const F_mat = matrix([[Fvec[0]], [Fvec[1]], [Fvec[2]]]);
+
+  // e^{A tau}
+  let E;
+  try {
+    E = expm(multiply(A_mat, tau));
+  } catch {
+    // Fallback simple serie (pocas iteraciones) si expm no disponible
+    const I = identity(6);
+    let term = I;
+    let result = I;
+    const Mtau = multiply(A_mat, tau);
+    for (let k = 1; k <= 18; k++) {
+      term = multiply(term, Mtau);
+      term = multiply(term, 1 / k);
+      result = add(result, term);
+    }
+    E = result;
+  }
+
+  const I6 = identity(6);
+  const A_inv = inv(A_mat);
+  const Bf = multiply(B_mat, F_mat); // 6x1
+  // s(tau) = A^{-1}(e^{A tau} - I) B F (estado inicial cero)
+  const diff = subtract(E, I6);
+  const s_tau = multiply(multiply(A_inv, diff), Bf); // 6x1 vector
+  const arr = (s_tau as any).toArray().map((row: number[]) => row[0]);
+
+  return {
+    x1: arr[0],
+    x2: arr[1],
+    x3: arr[2],
+    v1: arr[3],
+    v2: arr[4],
+    v3: arr[5],
+  };
 }

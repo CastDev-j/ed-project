@@ -4,7 +4,7 @@ import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import { useSimulationStore } from "@/lib/store";
-import { rk4Step, getForceFunction } from "@/lib/physics-engine";
+import { rk4Step, getForceFunction, laplaceStep } from "@/lib/physics-engine";
 import * as THREE from "three";
 
 export function MechanicalSystem3D() {
@@ -16,6 +16,7 @@ export function MechanicalSystem3D() {
     timeStep,
     currentTime,
     updateSimulation,
+    method,
   } = useSimulationStore();
 
   const frameCountRef = useRef(0);
@@ -30,15 +31,22 @@ export function MechanicalSystem3D() {
 
   useFrame(() => {
     if (!isRunning) return;
-
-    const newState = rk4Step(
-      currentState,
-      parameters,
-      forceFunctionRef.current,
-      timeStep,
-      currentTime
-    );
     const newTime = currentTime + timeStep;
+
+    let newState: typeof currentState;
+    // Solo usar Laplace si el método es laplace Y la fuerza es escalón
+    if (method === "laplace" && force.type === "step") {
+      newState = laplaceStep(parameters, force, newTime);
+    } else {
+      // Usar RK4 para todo lo demás
+      newState = rk4Step(
+        currentState,
+        parameters,
+        forceFunctionRef.current,
+        timeStep,
+        currentTime
+      );
+    }
 
     if (newTime >= MAX_SIMULATION_TIME) {
       updateSimulation(newState, newTime);

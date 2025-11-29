@@ -39,6 +39,7 @@ export interface AnalysisData {
 interface SimulationStore {
   parameters: SystemParams;
   force: ForceConfig;
+  method: "numerical" | "laplace";
 
   activePreset: null | "underdamped" | "critical" | "overdamped" | "resonance";
   aiAnalysisToken: number; // incremented on input changes to clear AI analysis
@@ -57,6 +58,7 @@ interface SimulationStore {
 
   setParameters: (params: Partial<SystemParams>) => void;
   setForce: (force: Partial<ForceConfig>) => void;
+  setMethod: (method: "numerical" | "laplace") => void;
   startSimulation: () => void;
   stopSimulation: () => void;
   resetSimulation: () => void;
@@ -84,6 +86,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
     frequency: 1.0,
     offset: 0,
   },
+  method: "numerical",
   activePreset: null,
   aiAnalysisToken: 0,
   isRunning: false,
@@ -118,8 +121,28 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
     })),
 
   setForce: (force) =>
+    set((state) => {
+      const newForce = { ...state.force, ...force };
+      // Si se cambia a un tipo que no es escalón, resetear a método numérico
+      const newMethod = newForce.type !== "step" ? "numerical" : state.method;
+      return {
+        force: newForce,
+        method: newMethod,
+        simulationData: {
+          time: [],
+          positions: { x1: [], x2: [], x3: [] },
+          velocities: { v1: [], v2: [], v3: [] },
+          energies: { kinetic: [], potential: [], total: [] },
+        },
+        currentTime: 0,
+        currentState: { x1: 0, v1: 0, x2: 0, v2: 0, x3: 0, v3: 0 },
+        aiAnalysisToken: state.aiAnalysisToken + 1,
+      };
+    }),
+
+  setMethod: (method) =>
     set((state) => ({
-      force: { ...state.force, ...force },
+      method,
       simulationData: {
         time: [],
         positions: { x1: [], x2: [], x3: [] },

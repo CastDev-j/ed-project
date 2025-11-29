@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useSimulationStore } from "@/lib/store";
-import { RotateCcw, Download } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { AIAnalysisButton } from "@/components/ai-analysis-button";
 
 export function ControlPanel() {
@@ -29,6 +29,8 @@ export function ControlPanel() {
     setForce,
     resetSimulation,
     loadPreset,
+    method,
+    setMethod,
   } = useSimulationStore();
   const activePreset = useSimulationStore((s) => s.activePreset);
 
@@ -171,6 +173,34 @@ export function ControlPanel() {
                   </Select>
                   <p className="text-xs text-muted-foreground leading-relaxed mt-2">
                     {forceDescriptions[force.type]}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm">Método</Label>
+                  <Select
+                    value={method}
+                    onValueChange={(value: any) => setMethod(value)}
+                    disabled={force.type !== "step"}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="numerical">Numérico (RK4)</SelectItem>
+                      <SelectItem
+                        value="laplace"
+                        disabled={force.type !== "step"}
+                      >
+                        Laplace (escalón)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground leading-relaxed mt-2">
+                    {force.type !== "step"
+                      ? "Método Laplace solo disponible para fuerza tipo escalón."
+                      : method === "laplace"
+                      ? "Usa solución analítica para fuerza tipo escalón (ignora frecuencia)."
+                      : "Integración RK4 adecuada para cualquier forma de fuerza."}
                   </p>
                 </div>
                 <div className="space-y-2">
